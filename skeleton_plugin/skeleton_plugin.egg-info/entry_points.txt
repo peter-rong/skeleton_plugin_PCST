@@ -1,2 +1,0 @@
-[napari.manifest]
-skeleton-plugin = skeleton_plugin:napari.yaml
