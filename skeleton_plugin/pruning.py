@@ -7,6 +7,7 @@ Created on Mon Feb 21 13:28:18 2022
 
 from .graph import Graph, dist2D, prune_graph, getCentroid, rgb_to_hex
 from queue import PriorityQueue
+import sys
 from typing import Union
 import numpy as np
 import matplotlib.pyplot as plt
@@ -352,10 +353,39 @@ class AnglePruningAlgo(PruningAlgo):
         super().__init__(g, npg)
 
     ''''''
-    def prune(self, thresh:float)->list:
-        #todo
+
+    def to_text_testing(self, graph, reward_list, cost_list:float):
+
+        resulting_text = 'The resulting graph is:\nSECTION Graph\n'
+        node_count, edge_count = len(graph.points), len(graph.edgeIndex)
+        resulting_text += 'Nodes '+ str(node_count) +'\nEdges '+ str(edge_count) +'\n'
+
+        terminal_count = 0
+        terminal_text = ''
+        for i in range (len(graph.points)):
+            if reward_list[i] != sys.maxsize:
+                resulting_text += 'N '+ str((i+1)) +' '+ str(reward_list[i]) +'\n'
+            else:
+                terminal_count += 1
+                terminal_text += 'TP ' + str((i+1)) +' '+ str(0) +'\n'
+
+        for j in range (len(graph.edgeIndex)):
+            resulting_text += 'E ' + str((graph.edgeIndex[j][0]+1))+ ' ' + str((graph.edgeIndex[j][1]+1)) +' '+ str(abs(cost_list[j])) +'\n'
+
+        resulting_text += 'END'+'\n' +'\n'+ 'SECTION Terminals' +'\n'+'Terminals '+str(terminal_count)+'\n'
+        resulting_text += terminal_text + 'END' +'\n' +'\n'+ 'EOF'
+
+        return resulting_text
+
+    def prune(self, thresh:float):
         clusters, junctions = self.__angle_thresh_cluster(thresh)
-        graph, color = self.generate_centroid_graph(clusters, junctions)
+        graph, color, reward_list, cost_list = self.generate_centroid_graph(clusters, junctions)
+
+        PCST = self.to_text_testing(graph, reward_list, cost_list)
+        pathname = './output/output_PCST.pcstp'
+        file = open(pathname, "w")
+        file.write(PCST)
+        file.close()
 
         return graph, color
 
@@ -371,6 +401,8 @@ class AnglePruningAlgo(PruningAlgo):
         point_list = list()
         edge_list = list()
         point_color_list = list()
+        point_reward_list = list()
+        edge_cost_list = list()
 
         black = (0,0,0)
         green = (0,255,0)
@@ -381,19 +413,29 @@ class AnglePruningAlgo(PruningAlgo):
                 non_negative_clusters.append(c)
                 point_list.append(getCentroid(c))
                 point_color_list.append(black)
+                point_reward_list.append(sys.maxsize) #10*len represents the core reward (becomes terminal)
 
             elif c[0].segval > 0:
                 non_negative_clusters.append(c)
                 point_list.append(getCentroid(c))
                 point_color_list.append(green)
+                reward = 0
+                for path in c:
+                    reward += path.segval
+                point_reward_list.append(reward) #reward equals sum of segval value
             else:
                 negative_clusters.append(c)
 
         for j in junctions:
             point_list.append(j.point)
-            point_color_list.append(blue) #5 is for junction points
+            point_color_list.append(blue) #junction points
+            point_reward_list.append(0) #0 represents the junction point reward
 
         for neg_c in negative_clusters:
+            cost = 0
+            for path in neg_c:
+                cost += path.segval
+
             endpoints = cluster_endpoints(neg_c)
             point_one, point_two = endpoints[0], endpoints[1]
             edge = []
@@ -414,11 +456,13 @@ class AnglePruningAlgo(PruningAlgo):
                         if j.point[0] == point_list[i][0] and j.point[1] == point_list[i][1]:
                             edge.append(i)
                             break
-            print(edge)
+            #print(edge)
 
             edge_list.append(edge)
+            edge_cost_list.append(cost)
 
-        return Graph(point_list,edge_list),  [rgb_to_hex(c) for c in point_color_list]
+        return Graph(point_list,edge_list),  [rgb_to_hex(c) for c in point_color_list],\
+               point_reward_list, edge_cost_list
 
     def __angle_thresh(self, thresh:float):
         pos = set()
