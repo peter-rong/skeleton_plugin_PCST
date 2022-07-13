@@ -137,7 +137,6 @@ class AngleState(st.State):
         algo_st().algo.npGraph.set_angles(angles) 
         tRec().stamp("calc angles")
 
-        
     def get_next(self):
         return AnglePruneState()
 
@@ -161,6 +160,7 @@ class ETPruneState(st.State):
         
         ds.Display.current().draw_layer(algo_st().final, peConfig, ds.final)
         tRec().stamp("Draw Final")
+
 
 class AnglePruneState(st.State):
     
@@ -209,7 +209,12 @@ class AnglePruneState(st.State):
         #ds.Display.current().draw_layer(algo_st().graph, peConfig2, ds.heatmap)
         tRec().stamp("heat map")
 
-
+        def get_next(self):
+            return AnglePruneState()
 
         
-        
+
+class drawSolverResultState(st.State):
+    def execute(self):
+        if algo_st().algo is None:
+            return

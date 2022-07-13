@@ -137,6 +137,7 @@ class DebugWidget(QWidget):
         self.show_et_box = self.__make_box("show et", 200)
         self.show_final_box = self.__make_box("show final", 240)
         self.show_angle_box = self.__make_box("show angle", 280)
+        self.show_PCST_box = self.__make_box("show PCST result", 320)
         
         WidgetManager.inst().add(self)
     
@@ -150,6 +151,7 @@ class DebugWidget(QWidget):
         config.show_et = self.show_et_box.isChecked()
         config.show_final = self.show_final_box.isChecked()
         config.show_angle = self.show_angle_box.isChecked()
+        config.show_pcst = self.show_PCST_box().isChecked()
         Display.current().set_config(config)
     
     def __make_box(self, text, position):
