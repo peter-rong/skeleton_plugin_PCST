@@ -163,7 +163,10 @@ class ETPruneState(st.State):
 
 
 class AnglePruneState(st.State):
-    
+
+    def get_next(self):
+        return drawSolverResultState(st.State)
+
     def execute(self):
         if algo_st().algo is None:
             return
@@ -209,12 +212,10 @@ class AnglePruneState(st.State):
         #ds.Display.current().draw_layer(algo_st().graph, peConfig2, ds.heatmap)
         tRec().stamp("heat map")
 
-        def get_next(self):
-            return AnglePruneState()
-
-        
 
 class drawSolverResultState(st.State):
     def execute(self):
         if algo_st().algo is None:
             return
+
+        tRec().stamp("draw PCST result")

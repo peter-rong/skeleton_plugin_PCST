@@ -151,7 +151,7 @@ class DebugWidget(QWidget):
         config.show_et = self.show_et_box.isChecked()
         config.show_final = self.show_final_box.isChecked()
         config.show_angle = self.show_angle_box.isChecked()
-        config.show_pcst = self.show_PCST_box().isChecked()
+        config.show_pcst = self.show_PCST_box.isChecked()
         Display.current().set_config(config)
     
     def __make_box(self, text, position):

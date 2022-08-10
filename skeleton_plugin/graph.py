@@ -60,9 +60,6 @@ class BinaryImage:
         numRow,numCol = self.data.shape;
         return xint >= 0 and yint >= 0 and xint < numRow and y < numCol and self.data[xint,yint] == 1
 
-
-
-
 class Graph:
     
     def __init__(self, point_list : list, edge : list, point_ids : list = None, edge_ids : list = None):
@@ -92,6 +89,7 @@ class Graph:
             return list(range(0,len(self.points)))
         else:
             return ids
+
 
 
 class VoronoiDiagram:

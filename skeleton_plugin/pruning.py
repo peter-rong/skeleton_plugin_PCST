@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
+
 class Node:   
     
     def __init__(self, p, r : float, ma : float):
@@ -196,6 +197,100 @@ class NodePathGraph:
         return ['#0000FF' if node.is_explicit_junction() else None for node in self.nodes]
 
 
+class TreeNode:
+
+    def __init__(self, point, r: float, isSol: bool):
+        self.point = point
+        self.reward = r
+        self.isSolution = isSol #whether we put this node into the solution
+        self.parentEdge = None
+        self.unClassifiedEdges = list()
+        self.childrenEdge = list()
+
+    def addUnClassifiedEdge(self, edge):
+        self.unClassifiedEdges.append(edge)
+
+    def setParentEdge(self, pEdge):
+        self.parentEdge = pEdge
+
+    def addChildEdge(self, cEdge):
+        self.childrenEdge.append(cEdge)
+
+    def classifyEdges(self)->list():
+
+        next = list()
+        for e in self.unClassifiedEdges:
+            childNode = e.getOtherNode(self)
+            self.addChildEdge(e)
+            childNode.setParentEdge(e)
+            e.parent = self
+            e.child = childNode
+            childNode.unClassifiedEdges.remove(e)
+            next.append(childNode)
+
+        self.unClassifiedEdges.clear()
+        return next
+
+class TreeEdge:
+
+    def __init__(self, one: TreeNode, other: TreeNode, c: float):
+        self.one = one
+        self.other = other
+        self.cost = c
+        self.parent = None
+        self.child = None
+
+    def getOtherNode(self, node: TreeNode):
+        if node == self.one: return self.other
+        return self.one
+
+class Tree:
+
+    def __init__(self, graph, reward_list, cost_list):
+
+        nodes = list()
+        self.root = None
+        #find the core
+        for i in range(len(graph.points)):
+            if reward_list[i]==sys.maxsize:
+                self.root = TreeNode(graph.points[i],sys.maxsize, True)
+                nodes.append(self.root)
+            else:
+                nodes.append(TreeNode(graph.points[i],reward_list[i], False))
+
+        for i in range(len(graph.edgeIndex)):
+            firstIndex = graph.edgeIndex[i][0]
+            secondIndex = graph.edgeIndex[i][1]
+            edge = TreeEdge(cost_list[i],nodes[firstIndex], nodes[secondIndex])
+            nodes[firstIndex].addUnClassifiedEdge(edge)
+            nodes[firstIndex].addUnClassifiedEdge(edge)
+        '''
+        if self.root == None:
+            print('this tree doesn\'t have a core, algorithm doesn\'t work')
+        '''
+        #generate tree direction
+        temp = self.root
+        nodes.remove(temp)
+
+        queue = []
+
+        next = temp.classifyEdges()
+        for e in next:
+            queue.append(e)
+
+        while len(queue) > 0:
+            temp = queue[0]
+            next = temp.classifyEdges()
+            for e in next:
+                queue.append(e)
+            queue.remove(temp)
+
+    def setValue(self):
+        return
+
+    def getPosList(self):
+        return
+
 class ClusterNode:
 
     def __init__(self, points, r: float, core: bool, out, name: str):
@@ -204,7 +299,7 @@ class ClusterNode:
         self.isCore = core
         self.outerpoints = out
         self.name = name
-
+        self.paths = list()
 
 class ClusterPath:
 
@@ -261,40 +356,13 @@ class PruningAlgo:
     def prune(self, thresh:float)->Graph:
         #virtual
         pass
-    
-    
+
 
 class ETPruningAlgo(PruningAlgo):
     
     def __init__(self, g : Graph, npg : NodePathGraph):
         super().__init__(g, npg)
-        '''
-        self.graph = g
-        self.npGraph = NodePathGraph(g.points, g.edgeIndex, radi, ma)
-        
-    def burn(self):
-        #todo
-        d_ones = self.npGraph.get_degree_ones()
-        pq = PriorityQueue()
-        for n in d_ones:
-            n.bt = n.radius
-            pq.put(PItem(n.bt,n))
-        
-        while not pq.empty():
-            targetN = pq.get().item
-            path = targetN.get_one_path()
-            if path is None:
-                continue
-            nextN = targetN.get_next(path)
-            nextN.remove_path(path)
-            if nextN.is_iso():
-                nextN.bt = targetN.bt + path.length
-                nextN.isCore = False
-                pq.put(PItem(nextN.bt, nextN))
-        
-        self.npGraph.reset_paths()
-    '''
-    
+
     def prune(self, thresh : float) -> Graph:
         #todo
         removed = set()
@@ -352,7 +420,6 @@ class AnglePruningAlgo(PruningAlgo):
     def __init__(self, g : Graph, npg : NodePathGraph):
         super().__init__(g, npg)
 
-    ''''''
 
     def to_text_testing(self, graph, reward_list, cost_list:float):
 
@@ -377,7 +444,9 @@ class AnglePruningAlgo(PruningAlgo):
 
         return resulting_text
 
+    #gives output file for the dapcstp solver
     def prune(self, thresh:float):
+
         clusters, junctions = self.__angle_thresh_cluster(thresh)
         graph, color, reward_list, cost_list = self.generate_centroid_graph(clusters, junctions)
 
@@ -464,6 +533,10 @@ class AnglePruningAlgo(PruningAlgo):
         return Graph(point_list,edge_list),  [rgb_to_hex(c) for c in point_color_list],\
                point_reward_list, edge_cost_list
 
+    def generate_tree(self, thresh:float):
+        clusters, junctions = self.__angle_thresh_cluster(thresh)
+        graph, color, reward_list, cost_list = self.generate_centroid_graph(clusters, junctions)
+
     def __angle_thresh(self, thresh:float):
         pos = set()
         neg = set()
@@ -484,11 +557,6 @@ class AnglePruningAlgo(PruningAlgo):
 
     def __angle_thresh_cluster(self, thresh:float):
 
-        '''
-        pos_cluster = list()
-        neg_cluster = list()
-        core_cluster = list()
-        '''
         clusters = list()
 
         for path in self.npGraph.paths:
@@ -549,24 +617,17 @@ class AnglePruningAlgo(PruningAlgo):
             color_total_value = 0
             for path in curr_set:
                 color_total_value += path.segval
-
             for path in curr_set:
                 path.colorvalue = color_total_value / len(curr_set)
-
             clusters.append(curr_set)
-
             break
 
         for path in self.npGraph.paths:
-
             if path.isNeglected:
                 continue
-
             if path.isTaken:
                 continue
-
             cluster_count += 1
-
             path_type = ''
             queue = []
             curr_set = list()
@@ -600,14 +661,7 @@ class AnglePruningAlgo(PruningAlgo):
                     queue.append(path)
                     path.isTaken = True
                     path.clusterNumber = cluster_count
-            '''
-            if path_type == 'core':
-                core_cluster.append(curr_set)
-            elif path_type == 'pos':
-                pos_cluster.append(curr_set)
-            else:
-                neg_cluster.append(curr_set)
-            '''
+
             color_total_value = 0
             for path in curr_set:
                 color_total_value += path.segval
@@ -633,7 +687,8 @@ class AnglePruningAlgo(PruningAlgo):
 
         return clusters,junctions
 
-        #return pos_cluster, neg_cluster, core_cluster
+    #return pos_cluster, neg_cluster, core_cluster
+    #not used at this point
     def generate_graph(self, clusters, junctions):
 
         cluster_nodes = list()
@@ -702,60 +757,12 @@ class AnglePruningAlgo(PruningAlgo):
                         outerpoints_list.append(key)
 
                 cluster_path = ClusterPath(outerpoints_list[0],outerpoints_list[1],len(c)*c[0].colorvalue)
+                outerpoints_list[0].paths.append(cluster_path) #set path
+                outerpoints_list[1].paths.append(cluster_path) #set path
                 cluster_paths.append(cluster_path)
 
         #graph with networkx
-        '''
-        G = nx.Graph()
 
-        margin_counter = 0
-        for path in cluster_paths:
-            first = ''
-            second = ''
-            #look for one
-            for node in cluster_nodes:
-                if path.one in node.points:
-                    first = node.name
-                if path.other in node.points:
-                    second = node.name
-
-            if first == '':
-                margin_counter+= 1
-                first = 'margin ' +str(margin_counter)
-            if second == '':
-                margin_counter += 1
-                second = 'margin ' + str(margin_counter)
-            G.add_edge(first, second, weight = round(path.cost, 2))
-
-        dict = {}
-
-        for n in G:
-            value = 0
-            for node in cluster_nodes:
-                if n == node.name:
-                    value = node.reward
-                    break
-            dict[n] = round(value, 2)
-
-        plt.figure(figsize=(12, 12))
-
-        pos = nx.fruchterman_reingold_layout(G)
-
-        elist = [(u, v) for (u, v, d) in G.edges(data=True)]
-        nx.draw_networkx_nodes(G, pos, node_size=200)
-        nx.draw_networkx_edges(G, pos, edgelist=elist, width=1)
-        # node labels
-        nx.draw_networkx_labels(G, pos, labels = dict, font_size=10, font_family="sans-serif")
-        # edge weight labels
-        edge_labels = nx.get_edge_attributes(G, "weight")
-        nx.draw_networkx_edge_labels(G, pos, edge_labels)
-
-        ax = plt.gca()
-        ax.margins(0.08)
-        plt.axis("off")
-        plt.tight_layout()
-        plt.show()
-        '''
 
 '''
 points = [[0,1],[1,2],[2,3],[3,4]]
