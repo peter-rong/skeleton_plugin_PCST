@@ -196,101 +196,6 @@ class NodePathGraph:
     def get_junction_color(self):
         return ['#0000FF' if node.is_explicit_junction() else None for node in self.nodes]
 
-
-class TreeNode:
-
-    def __init__(self, point, r: float, isSol: bool):
-        self.point = point
-        self.reward = r
-        self.isSolution = isSol #whether we put this node into the solution
-        self.parentEdge = None
-        self.unClassifiedEdges = list()
-        self.childrenEdge = list()
-
-    def addUnClassifiedEdge(self, edge):
-        self.unClassifiedEdges.append(edge)
-
-    def setParentEdge(self, pEdge):
-        self.parentEdge = pEdge
-
-    def addChildEdge(self, cEdge):
-        self.childrenEdge.append(cEdge)
-
-    def classifyEdges(self)->list():
-
-        next = list()
-        for e in self.unClassifiedEdges:
-            childNode = e.getOtherNode(self)
-            self.addChildEdge(e)
-            childNode.setParentEdge(e)
-            e.parent = self
-            e.child = childNode
-            childNode.unClassifiedEdges.remove(e)
-            next.append(childNode)
-
-        self.unClassifiedEdges.clear()
-        return next
-
-class TreeEdge:
-
-    def __init__(self, one: TreeNode, other: TreeNode, c: float):
-        self.one = one
-        self.other = other
-        self.cost = c
-        self.parent = None
-        self.child = None
-
-    def getOtherNode(self, node: TreeNode):
-        if node == self.one: return self.other
-        return self.one
-
-class Tree:
-
-    def __init__(self, graph, reward_list, cost_list):
-
-        nodes = list()
-        self.root = None
-        #find the core
-        for i in range(len(graph.points)):
-            if reward_list[i]==sys.maxsize:
-                self.root = TreeNode(graph.points[i],sys.maxsize, True)
-                nodes.append(self.root)
-            else:
-                nodes.append(TreeNode(graph.points[i],reward_list[i], False))
-
-        for i in range(len(graph.edgeIndex)):
-            firstIndex = graph.edgeIndex[i][0]
-            secondIndex = graph.edgeIndex[i][1]
-            edge = TreeEdge(cost_list[i],nodes[firstIndex], nodes[secondIndex])
-            nodes[firstIndex].addUnClassifiedEdge(edge)
-            nodes[firstIndex].addUnClassifiedEdge(edge)
-        '''
-        if self.root == None:
-            print('this tree doesn\'t have a core, algorithm doesn\'t work')
-        '''
-        #generate tree direction
-        temp = self.root
-        nodes.remove(temp)
-
-        queue = []
-
-        next = temp.classifyEdges()
-        for e in next:
-            queue.append(e)
-
-        while len(queue) > 0:
-            temp = queue[0]
-            next = temp.classifyEdges()
-            for e in next:
-                queue.append(e)
-            queue.remove(temp)
-
-    def setValue(self):
-        return
-
-    def getPosList(self):
-        return
-
 class ClusterNode:
 
     def __init__(self, points, r: float, core: bool, out, name: str):
@@ -430,7 +335,7 @@ class AnglePruningAlgo(PruningAlgo):
         terminal_count = 0
         terminal_text = ''
         for i in range (len(graph.points)):
-            if reward_list[i] != sys.maxsize:
+            if reward_list[i] != sys.maxsize/2:
                 resulting_text += 'N '+ str((i+1)) +' '+ str(reward_list[i]) +'\n'
             else:
                 terminal_count += 1
@@ -450,13 +355,14 @@ class AnglePruningAlgo(PruningAlgo):
         clusters, junctions = self.__angle_thresh_cluster(thresh)
         graph, color, reward_list, cost_list = self.generate_centroid_graph(clusters, junctions)
 
+        '''
         PCST = self.to_text_testing(graph, reward_list, cost_list)
         pathname = './output/output_PCST.pcstp'
         file = open(pathname, "w")
         file.write(PCST)
         file.close()
-
-        return graph, color
+        '''
+        return graph, color, reward_list, cost_list
 
     def prune_heat(self, thresh:float)->list:
         self.__angle_thresh(thresh)
@@ -482,7 +388,7 @@ class AnglePruningAlgo(PruningAlgo):
                 non_negative_clusters.append(c)
                 point_list.append(getCentroid(c))
                 point_color_list.append(black)
-                point_reward_list.append(sys.maxsize) #10*len represents the core reward (becomes terminal)
+                point_reward_list.append(sys.maxsize/2) #sys.maxsize/2 represents the core reward (becomes terminal)
 
             elif c[0].segval > 0:
                 non_negative_clusters.append(c)
@@ -532,10 +438,6 @@ class AnglePruningAlgo(PruningAlgo):
 
         return Graph(point_list,edge_list),  [rgb_to_hex(c) for c in point_color_list],\
                point_reward_list, edge_cost_list
-
-    def generate_tree(self, thresh:float):
-        clusters, junctions = self.__angle_thresh_cluster(thresh)
-        graph, color, reward_list, cost_list = self.generate_centroid_graph(clusters, junctions)
 
     def __angle_thresh(self, thresh:float):
         pos = set()

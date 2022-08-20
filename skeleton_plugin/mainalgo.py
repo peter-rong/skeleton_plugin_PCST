@@ -223,6 +223,22 @@ def get_angular_centroid_config(size : float) -> drawing.PointEdgeConfig:
 
     return drawing.PointEdgeConfig(pConfig, eConfig)
 
+def get_PCST_result_config(size : float) -> drawing.PointEdgeConfig:
+    pConfig = drawing.angular_default_config()
+    eConfig = drawing.angular_default_config()
+
+    # pConfig.name = "vor points"
+    pConfig.size = size*2
+    pConfig.edge_color = 'red'
+    pConfig.face_color = 'red'
+
+    # eConfig.name = "vor edges"
+    eConfig.size = size
+    eConfig.edge_color = 'red'
+    eConfig.face_color = 'red'
+
+    return drawing.PointEdgeConfig(pConfig, eConfig)
+
 def get_angular_config(size : float) -> drawing.PointEdgeConfig:
     pConfig = drawing.angular_default_config()
     eConfig = drawing.angular_default_config()

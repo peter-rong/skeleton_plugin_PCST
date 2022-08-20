@@ -1,4 +1,5 @@
 import sys
+from . import graph
 
 class TreeNode:
 
@@ -75,7 +76,7 @@ class Tree:
         self.edges = list()
 
         for i in range(len(points)):
-            self.nodes.append(TreeNode(points[i],reward_list[i], reward_list[i] == sys.maxsize))
+            self.nodes.append(TreeNode(points[i],reward_list[i]))
 
         for i in range(len(edgeIndex)):
             firstIndex = edgeIndex[i][0]
@@ -105,4 +106,19 @@ class Tree:
         edge.other.add_edge(edge)
         self.edges.append(edge)
 
+    def to_graph(self):
+        points = list()
+        temp_nodes = list()
+        edgeIndex = list()
 
+        for node in self.nodes:
+            temp_nodes.append(node)
+            points.append(node.point)
+
+        for edge in self.edges:
+            curr = []
+            curr.append(temp_nodes.index(edge.one))
+            curr.append(temp_nodes.index(edge.other))
+            edgeIndex.append(curr)
+
+        return graph.Graph(points, edgeIndex)

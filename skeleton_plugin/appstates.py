@@ -9,6 +9,8 @@ from . import statemachine as st
 from . import mainalgo as ma
 from . import display as ds
 from .pruning import BurningAlgo,ETPruningAlgo,AnglePruningAlgo
+from . import tree
+from . import treealgorithm
 import numpy as np
 
 def algo_st():
@@ -164,9 +166,6 @@ class ETPruneState(st.State):
 
 class AnglePruneState(st.State):
 
-    def get_next(self):
-        return drawSolverResultState(st.State)
-
     def execute(self):
         if algo_st().algo is None:
             return
@@ -174,16 +173,13 @@ class AnglePruneState(st.State):
         pruneT = np.pi * app_st().etThresh / 100.0
 
         prune_algo = AnglePruningAlgo(algo_st().algo.graph, algo_st().algo.npGraph)
-        centroid_graph, centroid_points_color =  prune_algo.prune(pruneT)
+        centroid_graph, centroid_points_color, reward_list, cost_list =  prune_algo.prune(pruneT)
 
         peConfig = ma.get_angular_config(get_size())
         centroid_peConfig = ma.get_angular_centroid_config(get_size())
 
         all_edge = algo_st().algo.npGraph.get_paths()
         edge_colors = graph.get_color_from_edge(all_edge)
-
-        #edge_color_val = algo_st().algo.npGraph.get_colorvalue()
-        #edge_colors = graph.get_multiple_color_list(edge_color_val)
 
         point_colors = algo_st().algo.npGraph.get_junction_color()
 
@@ -198,24 +194,17 @@ class AnglePruneState(st.State):
         centroid_peConfig.pointConfig.face_color = centroid_points_color
         centroid_peConfig.edgeConfig.edge_color = "purple"
 
-        ds.Display.current().draw_layer(centroid_graph, centroid_peConfig, ds.heatmap)
-        tRec().stamp("draw_centroid_graph")
+        ds.Display.current().draw_layer(centroid_graph, centroid_peConfig, ds.pcst)
+        tRec().stamp("draw_PCST")
 
-        seg_val = algo_st().algo.npGraph.get_segval()
-        colors = graph.get_three_color_list(seg_val)
+        initial_tree = tree.Tree(centroid_graph.points, centroid_graph.edgeIndex, reward_list, cost_list)
+        result_tree = treealgorithm.Algorithm(initial_tree).execute()
 
-        peConfig2 = ma.get_vorgraph_config(get_size())
-        # print(colors)
-        peConfig2.pointConfig.edge_color = "blue"
-        peConfig2.edgeConfig.edge_color = colors
+        result_graph = result_tree.to_graph()
 
-        #ds.Display.current().draw_layer(algo_st().graph, peConfig2, ds.heatmap)
-        tRec().stamp("heat map")
+        result_peConfig = ma.get_PCST_result_config(get_size())
 
+        ds.Display.current().draw_layer(result_graph, result_peConfig, ds.pcstResult)
 
-class drawSolverResultState(st.State):
-    def execute(self):
-        if algo_st().algo is None:
-            return
+        tRec().stamp("draw_PCST_result")
 
-        tRec().stamp("draw PCST result")

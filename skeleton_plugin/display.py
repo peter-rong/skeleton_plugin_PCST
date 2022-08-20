@@ -18,6 +18,7 @@ erosionT = "ET"
 final = "final"
 angle = "angle"
 pcst = "pcst" #pr
+pcstResult = "pcst result"
 
 
 class DisplayConfig:
@@ -32,6 +33,7 @@ class DisplayConfig:
         self.show_final = True
         self.show_angle = False
         self.show_pcst = False
+        self.show_pcst_result = False
     
     def flag_raise(self, name : str) -> bool:
         if name == boundary:
@@ -52,6 +54,8 @@ class DisplayConfig:
             return self.show_angle
         if name == pcst:
             return self.show_pcst
+        if name == pcstResult:
+            return self.show_pcst_result
         return False
         
 
@@ -99,6 +103,7 @@ class Display:
         self.show_layer(isShow = self.config.show_bt, layer = burnTime)
         self.show_layer(isShow = self.config.show_final, layer = final)
         self.show_layer(isShow = self.config.show_pcst, layer = pcst)
+        self.show_layer(isShow = self.config.show_pcst_result, layer = pcstResult)
 
     def removeall(self):
         # todo : remove all layers

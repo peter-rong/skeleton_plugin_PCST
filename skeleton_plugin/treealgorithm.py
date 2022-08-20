@@ -1,4 +1,4 @@
-import tree
+from . import tree
 
 from collections import deque
 
@@ -68,6 +68,7 @@ class Algorithm:
 				temp.update_score()
 
 			root = self.get_solution_node()
+			print('The score of the PCST is '+ str(root.score))
 			return self.get_solution_tree(root)
 
 
@@ -103,6 +104,5 @@ class Algorithm:
 						solution_tree.add_edge(e)
 
 					neighbor.solutionChecked = True
-		print('here')
 
 		return solution_tree
