@@ -173,7 +173,7 @@ class AnglePruneState(st.State):
         pruneT = np.pi * app_st().etThresh / 100.0
 
         prune_algo = AnglePruningAlgo(algo_st().algo.graph, algo_st().algo.npGraph)
-        centroid_graph, centroid_points_color, reward_list, cost_list =  prune_algo.prune(pruneT)
+        centroid_graph, centroid_points_color, reward_list, cost_list, point_map, point_pair_map =  prune_algo.prune(pruneT)
 
         peConfig = ma.get_angular_config(get_size())
         centroid_peConfig = ma.get_angular_centroid_config(get_size())
@@ -200,11 +200,18 @@ class AnglePruneState(st.State):
         initial_tree = tree.Tree(centroid_graph.points, centroid_graph.edgeIndex, reward_list, cost_list)
         result_tree = treealgorithm.Algorithm(initial_tree).execute()
 
-        result_graph = result_tree.to_graph()
+        PCST_result_graph = result_tree.to_graph()
 
-        result_peConfig = ma.get_PCST_result_config(get_size())
+        PCST_result_peConfig = ma.get_PCST_result_config(get_size())
 
-        ds.Display.current().draw_layer(result_graph, result_peConfig, ds.pcstResult)
+        skeleton_result_graph = graph.cluster_to_skeleton(PCST_result_graph, point_map, point_pair_map)
+
+        ds.Display.current().draw_layer(PCST_result_graph, PCST_result_peConfig, ds.pcstResult)
 
         tRec().stamp("draw_PCST_result")
 
+        skeleton_result_peConfig = ma.get_skeleton_result_config(get_size())
+
+        ds.Display.current().draw_layer(skeleton_result_graph, skeleton_result_peConfig, ds.skeletonResult)
+
+        tRec().stamp("draw_skeleton_result")

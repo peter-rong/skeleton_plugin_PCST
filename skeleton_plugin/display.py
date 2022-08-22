@@ -19,6 +19,7 @@ final = "final"
 angle = "angle"
 pcst = "pcst" #pr
 pcstResult = "pcst result"
+skeletonResult = "skeleton result"
 
 
 class DisplayConfig:
@@ -34,6 +35,7 @@ class DisplayConfig:
         self.show_angle = False
         self.show_pcst = False
         self.show_pcst_result = False
+        self.show_skeleton_result = False
     
     def flag_raise(self, name : str) -> bool:
         if name == boundary:
@@ -56,6 +58,8 @@ class DisplayConfig:
             return self.show_pcst
         if name == pcstResult:
             return self.show_pcst_result
+        if name == skeletonResult:
+            return self.show_skeleton_result
         return False
         
 

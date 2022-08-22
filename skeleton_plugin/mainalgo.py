@@ -239,6 +239,23 @@ def get_PCST_result_config(size : float) -> drawing.PointEdgeConfig:
 
     return drawing.PointEdgeConfig(pConfig, eConfig)
 
+def get_skeleton_result_config(size : float) -> drawing.PointEdgeConfig:
+    pConfig = drawing.angular_default_config()
+    eConfig = drawing.angular_default_config()
+
+    # pConfig.name = "vor points"
+    pConfig.size = size
+    pConfig.edge_color = 'purple'
+    pConfig.face_color = 'purple'
+
+    # eConfig.name = "vor edges"
+    eConfig.size = size/2
+    eConfig.edge_color = 'purple'
+    eConfig.face_color = 'purple'
+
+    return drawing.PointEdgeConfig(pConfig, eConfig)
+
+
 def get_angular_config(size : float) -> drawing.PointEdgeConfig:
     pConfig = drawing.angular_default_config()
     eConfig = drawing.angular_default_config()

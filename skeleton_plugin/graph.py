@@ -67,7 +67,17 @@ class Graph:
         self.edgeIndex = edge
         self.point_ids = self.__build_point_ids(point_ids)
         self.edge_ids = self.__build_edges_ids(edge_ids)
-    
+
+
+    def get_cord_as_tuples(self):
+        edges = list()
+        for e in self.edgeIndex:
+            x = e[0]
+            y = e[1]
+            if x >= 0 and y >= 0:
+                edges.append(tuple([tuple(self.points[x]), tuple(self.points[y])]))
+        return edges
+
     def get_edge_cord(self) -> np.ndarray:
         edges = list()
         for e in self.edgeIndex:
@@ -91,6 +101,39 @@ class Graph:
             return ids
 
 
+def cluster_to_skeleton(graph:Graph, point_map, point_pair_map) -> Graph:
+    new_points = list()
+    new_edges = list()
+
+    for point in graph.points:
+        point_tuple = tuple(point)
+
+        if point_tuple not in point_map:
+            print('wrong')
+            break
+
+        for point_pair in point_map[point_tuple]:
+            point_pair = [list(point_pair[0]), list(point_pair[1])]
+            if point_pair[0] not in new_points:
+                new_points.append(point_pair[0])
+            if point_pair[1] not in new_points:
+                new_points.append(point_pair[1])
+
+            new_edges.append([new_points.index(point_pair[0]), new_points.index(point_pair[1])])
+
+
+    for edge_cord in graph.get_cord_as_tuples():
+
+        for point_pair in point_pair_map[edge_cord]:
+            point_pair = [list(point_pair[0]),list(point_pair[1])]
+            if point_pair[0] not in new_points:
+                new_points.append(point_pair[0])
+            if point_pair[1] not in new_points:
+                new_points.append(point_pair[1])
+
+            new_edges.append([new_points.index(point_pair[0]),new_points.index(point_pair[1])])
+
+    return Graph(new_points,new_edges)
 
 class VoronoiDiagram:
     
